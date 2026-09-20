@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Work log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #e9eeea;
+    --grid: rgba(20, 60, 45, .07);
+    --page: #f8faf7;
+    --ink: #15211b;
+    --muted: #5a6b62;
+    --line: #c9d5cc;
+    --accent: #0d6b4d;
+    --accent-ink: #ffffff;
+    --pending: #94590a;
+    --problem: #b0261d;
+    --focus: #0d6b4d;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1512;
+      --grid: rgba(120, 220, 180, .06);
+      --page: #161e19;
+      --ink: #e5eee8;
+      --muted: #8fa398;
+      --line: #2b3a32;
+      --accent: #3fbf8f;
+      --accent-ink: #06150e;
+      --pending: #e0a24a;
+      --problem: #ff8a80;
+      --focus: #3fbf8f;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink);
+    background-color: var(--bg);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    min-height: 100vh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  button, input, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px 16px 64px; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0 16px; }
+  .brand { font-weight: 800; font-size: 22px; letter-spacing: -0.02em; margin: 0; }
+  .tabs { display: flex; gap: 4px; background: var(--page); border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+  .tab { border: 0; background: transparent; padding: 8px 14px; border-radius: 7px; cursor: pointer; font-weight: 500; color: var(--muted); }
+  .tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+
+  .sheet {
+    background: var(--page);
+    border: 1px solid var(--line);
+    border-left: 6px solid var(--accent);
+    border-radius: 4px 12px 12px 4px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .datebar { display: flex; align-items: center; gap: 8px; }
+  .datebar .label { flex: 1; min-width: 0; }
+  .day-big { font-size: clamp(26px, 6vw, 38px); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; margin: 0; }
+  .day-small { color: var(--muted); margin: 2px 0 0; }
+  .iconbtn { width: 44px; height: 44px; flex: none; border-radius: 10px; border: 1px solid var(--line); background: var(--page); cursor: pointer; font-size: 20px; line-height: 1; }
+  .iconbtn:hover { border-color: var(--accent); }
+  .datepick { margin-top: 12px; }
+  input[type="date"] { border: 1px solid var(--line); background: var(--page); border-radius: 8px; padding: 8px 10px; }
+
+  h2 { font-size: 18px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .hint { color: var(--muted); font-size: 14px; margin: 0 0 8px; }
+  label.lb { display: block; font-weight: 500; margin: 0 0 6px; }
+
+  .prio { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .prio .n { width: 26px; height: 26px; flex: none; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; font-size: 14px; }
+  .prio input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--page); border-radius: 10px; padding: 10px 12px; }
+
+  textarea {
+    width: 100%; min-height: 190px; resize: vertical;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--page); padding: 14px; line-height: 1.55;
+  }
+  textarea::placeholder, .prio input::placeholder { color: var(--muted); }
+
+  .rate { margin-top: 16px; }
+  .scale { display: flex; gap: 6px; }
+  .scale button { flex: 1; min-height: 44px; border: 1px solid var(--line); background: var(--page); border-radius: 10px; cursor: pointer; font-weight: 700; }
+  .scale button:hover { border-color: var(--accent); }
+  .scale button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+  .btn { border: 1px solid var(--line); background: var(--page); padding: 10px 16px; border-radius: 10px; cursor: pointer; font-weight: 500; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+  .btn:disabled { opacity: .6; cursor: progress; }
+  .msg { color: var(--muted); font-size: 14px; }
+  .msg.err { color: var(--problem); }
+
+  .sec { margin-top: 18px; }
+  .sec:first-child { margin-top: 0; }
+  ul.b { list-style: none; margin: 0; padding: 0; }
+  ul.b li { position: relative; padding: 4px 0 4px 26px; }
+  ul.b li::before { position: absolute; left: 0; top: 4px; font-weight: 800; }
+  ul.win li::before { content: "★"; color: var(--accent); }
+  ul.done li::before { content: "✓"; color: var(--accent); }
+  ul.pend li::before { content: "○"; color: var(--pending); }
+  ul.prob li::before { content: "▲"; color: var(--problem); font-size: 13px; top: 6px; }
+  ul.plain li::before { content: "•"; color: var(--muted); }
+  ul.plan li.s-done::before { content: "✓"; color: var(--accent); }
+  ul.plan li.s-part::before { content: "◐"; color: var(--pending); }
+  ul.plan li.s-not::before { content: "✕"; color: var(--problem); }
+  .tag { display: inline-block; margin-left: 6px; font-size: 13px; color: var(--muted); }
+
+  .act { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .act:last-child { border-bottom: 0; }
+  .act input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--accent); flex: none; }
+  .act .t { flex: 1; min-width: 0; }
+  .act.isdone .t span.task { text-decoration: line-through; color: var(--muted); }
+  .who { display: inline-block; margin-top: 2px; font-size: 14px; font-weight: 700; color: var(--accent); }
+  .who.none { color: var(--muted); font-weight: 500; }
+
+  .search { width: 100%; border: 1px solid var(--line); background: var(--page); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+  .hitem { display: block; width: 100%; text-align: left; background: var(--page); border: 1px solid var(--line); border-left: 6px solid var(--accent); border-radius: 4px 12px 12px 4px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; }
+  .hitem:hover { border-color: var(--accent); }
+  .hdate { font-weight: 800; }
+  .hmeta { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .hprev { margin-top: 6px; font-size: 15px; }
+
+  .ranges { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line); background: var(--page); border-radius: 999px; padding: 8px 14px; cursor: pointer; font-weight: 500; }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .custom { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; color: var(--muted); }
+
+  /* weekday shape */
+  .wk { display: grid; grid-template-columns: 44px 1fr 74px; gap: 10px; align-items: center; padding: 5px 0; }
+  .wk .d { font-weight: 700; }
+  .wk .bars { display: grid; gap: 3px; }
+  .wk .track { height: 9px; background: var(--line); border-radius: 5px; overflow: hidden; }
+  .wk .fill { display: block; height: 100%; border-radius: 5px; }
+  .wk .fill.p { background: var(--accent); }
+  .wk .fill.e { background: var(--pending); }
+  .wk .v { font-size: 13px; color: var(--muted); text-align: right; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+  .legend i { display: inline-block; width: 12px; height: 8px; border-radius: 4px; margin-right: 6px; }
+  .facts { margin: 12px 0 0; font-weight: 500; }
+
+  .empty { color: var(--muted); padding: 8px 0; }
+
+  #gate { position: fixed; inset: 0; background: var(--bg); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+  #gate.on { display: flex; }
+  #gate .sheet { width: 100%; max-width: 380px; margin: 0; }
+  #gate input { width: 100%; border: 1px solid var(--line); background: var(--page); border-radius: 10px; padding: 12px 14px; margin: 8px 0 12px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .fresh { animation: settle .25s ease-out; }
+    @keyframes settle { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  }
+  @media (max-width: 520px) {
+    .top { flex-direction: column; align-items: stretch; }
+    .tabs { justify-content: space-between; }
+    .tab { flex: 1; }
+    .sheet { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+  <div class="sheet">
+    <h2 id="gate-title">Enter your password</h2>
+    <label for="pw" class="msg">This log is private. Use the password you set in Vercel.</label>
+    <input id="pw" type="password" autocomplete="current-password">
+    <div class="row" style="margin-top:0">
+      <button class="btn primary" id="gate-go">Open log</button>
+      <span class="msg err" id="gate-msg"></span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="top">
+    <h1 class="brand">Work log</h1>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" data-tab="log" aria-selected="true">Today</button>
+      <button class="tab" role="tab" data-tab="history" aria-selected="false">History</button>
+      <button class="tab" role="tab" data-tab="report" aria-selected="false">Report</button>
+    </nav>
+  </header>
+
+  <!-- LOG -->
+  <main id="view-log">
+    <section class="sheet">
+      <div class="datebar">
+        <button class="iconbtn" data-act="prev" aria-label="Previous day">‹</button>
+        <div class="label">
+          <p class="day-big" id="day-big"></p>
+          <p class="day-small" id="day-small"></p>
+        </div>
+        <button class="iconbtn" data-act="next" aria-label="Next day">›</button>
+      </div>
+      <div class="datepick">
+        <label class="msg" for="date">Jump to date </label>
+        <input type="date" id="date">
+      </div>
+    </section>
+
+    <section class="sheet">
+      <h2>Top 3 priorities</h2>
+      <p class="hint">Set these in the morning. Only what must be done today.</p>
+      <div class="prio"><span class="n" aria-hidden="true">1</span><input id="p1" type="text" maxlength="200" aria-label="Priority 1" placeholder="Most important task"></div>
+      <div class="prio"><span class="n" aria-hidden="true">2</span><input id="p2" type="text" maxlength="200" aria-label="Priority 2" placeholder="Second task"></div>
+      <div class="prio"><span class="n" aria-hidden="true">3</span><input id="p3" type="text" maxlength="200" aria-label="Priority 3" placeholder="Third task"></div>
+    </section>
+
+    <section class="sheet">
+      <label for="raw" class="lb">What did you do today?</label>
+      <textarea id="raw" placeholder="Made 3 quotations, 2 were Asif's. Factory visit and 1 meeting. Bangladesh lead done, follow-up email still pending."></textarea>
+
+      <div class="rate">
+        <label class="lb" id="lb-score">How productive was the day?</label>
+        <div class="scale" role="group" aria-labelledby="lb-score" data-scale="score">
+          <button type="button" data-val="1" aria-pressed="false">1</button>
+          <button type="button" data-val="2" aria-pressed="false">2</button>
+          <button type="button" data-val="3" aria-pressed="false">3</button>
+          <button type="button" data-val="4" aria-pressed="false">4</button>
+          <button type="button" data-val="5" aria-pressed="false">5</button>
+        </div>
+        <div class="ends"><span>Wasted</span><span>Excellent</span></div>
+      </div>
+
+      <div class="rate">
+        <label class="lb" id="lb-energy">How much energy is left at the end of the day?</label>
+        <div class="scale" role="group" aria-labelledby="lb-energy" data-scale="energy">
+          <button type="button" data-val="1" aria-pressed="false">1</button>
+          <button type="button" data-val="2" aria-pressed="false">2</button>
+          <button type="button" data-val="3" aria-pressed="false">3</button>
+          <button type="button" data-val="4" aria-pressed="false">4</button>
+          <button type="button" data-val="5" aria-pressed="false">5</button>
+        </div>
+        <div class="ends"><span>Drained</span><span>Fresh</span></div>
+      </div>
+
+      <div class="row">
+        <button class="btn primary" id="btn-sum">Summarize and save</button>
+        <button class="btn" id="btn-save">Save without summary</button>
+        <button class="btn" id="btn-copy" hidden>Copy summary</button>
+        <span class="msg" id="msg" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+
+    <section id="entry-out"></section>
+  </main>
+
+  <!-- HISTORY -->
+  <main id="view-history" hidden>
+    <input class="search" id="search" type="search" placeholder="Search your log (customer, project, name)" aria-label="Search your log">
+    <div id="hist-list"></div>
+  </main>
+
+  <!-- REPORT -->
+  <main id="view-report" hidden>
+    <section class="sheet">
+      <h2>Analyze my work</h2>
+      <p class="hint">Finds your best days, what wastes your time, and how to set better priorities.</p>
+      <div class="ranges" id="ranges">
+        <button class="chip" data-range="w0" aria-pressed="true">This week</button>
+        <button class="chip" data-range="w1" aria-pressed="false">Last week</button>
+        <button class="chip" data-range="m0" aria-pressed="false">This month</button>
+        <button class="chip" data-range="m1" aria-pressed="false">Last month</button>
+        <button class="chip" data-range="c" aria-pressed="false">Custom</button>
+      </div>
+      <div class="custom" id="custom" hidden>
+        <label for="from">From</label><input type="date" id="from">
+        <label for="to">to</label><input type="date" id="to">
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="btn-report">Analyze</button>
+        <button class="btn" id="btn-report-copy" hidden>Copy report</button>
+        <span class="msg" id="report-msg" role="status" aria-live="polite"></span>
+      </div>
+    </section>
+    <section id="report-out"></section>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var fmt = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  var parse = function (s) { return new Date(s + 'T12:00:00'); };
+  var today = function () { return fmt(new Date()); };
+  var FULLDAY = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
+
+  var state = {
+    pw: localStorage.getItem('wl_pw') || '',
+    entries: {},
+    date: today(),
+    score: null,
+    energy: null,
+    range: 'w0',
+    lastReport: null
+  };
+
+  /* ---------- API ---------- */
+  function api(path, opts) {
+    opts = opts || {};
+    return fetch(path, {
+      method: opts.method || 'GET',
+      headers: { 'content-type': 'application/json', 'x-app-password': state.pw },
+      body: opts.body
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (r.status === 401) { showGate('Wrong password. Try again.'); throw new Error('Wrong password.'); }
+        if (!r.ok) throw new Error(j.error || 'Request failed (' + r.status + ').');
+        return j;
+      });
+    });
+  }
+
+  /* ---------- Password gate ---------- */
+  function showGate(text) {
+    $('#gate').classList.add('on');
+    $('#gate-msg').textContent = text || '';
+    $('#pw').focus();
+  }
+  function hideGate() { $('#gate').classList.remove('on'); }
+  $('#gate-go').addEventListener('click', submitGate);
+  $('#pw').addEventListener('keydown', function (e) { if (e.key === 'Enter') submitGate(); });
+  function submitGate() {
+    var v = $('#pw').value;
+    if (!v) return;
+    state.pw = v;
+    localStorage.setItem('wl_pw', v);
+    $('#pw').value = '';
+    boot();
+  }
+
+  function boot() {
+    if (!state.pw) { showGate(''); return; }
+    api('/api/entries').then(function (j) {
+      state.entries = j.entries || {};
+      hideGate();
+      loadDay();
+      renderHistory();
+    }).catch(function (e) {
+      if (e.message !== 'Wrong password.') { hideGate(); setMsg(e.message, true); }
+    });
+  }
+
+  /* ---------- Tabs ---------- */
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.addEventListener('click', function () { setTab(t.getAttribute('data-tab')); });
+  });
+  function setTab(name) {
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.setAttribute('aria-selected', t.getAttribute('data-tab') === name ? 'true' : 'false');
+    });
+    ['log', 'history', 'report'].forEach(function (v) { $('#view-' + v).hidden = v !== name; });
+    if (name === 'history') renderHistory();
+  }
+
+  /* ---------- Log view ---------- */
+  function setMsg(text, isErr) {
+    var m = $('#msg');
+    m.textContent = text || '';
+    m.className = 'msg' + (isErr ? ' err' : '');
+  }
+
+  function renderDate() {
+    var d = parse(state.date);
+    $('#day-big').textContent = d.toLocaleDateString('en-GB', { weekday: 'long' }) + ', ' +
+      d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    $('#day-small').textContent = d.getFullYear() + (state.date === today() ? ' (today)' : '');
+    $('#date').value = state.date;
+  }
+
+  function renderScales() {
+    ['score', 'energy'].forEach(function (k) {
+      document.querySelectorAll('[data-scale="' + k + '"] button').forEach(function (b) {
+        b.setAttribute('aria-pressed', Number(b.getAttribute('data-val')) === state[k] ? 'true' : 'false');
+      });
+    });
+  }
+  document.querySelectorAll('.scale').forEach(function (g) {
+    g.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-val]');
+      if (!b) return;
+      var k = g.getAttribute('data-scale');
+      var v = Number(b.getAttribute('data-val'));
+      state[k] = state[k] === v ? null : v;
+      renderScales();
+    });
+  });
+
+  function loadDay() {
+    renderDate();
+    var e = state.entries[state.date] || {};
+    $('#raw').value = e.raw || '';
+    var plan = e.plan || [];
+    ['#p1', '#p2', '#p3'].forEach(function (id, i) { $(id).value = plan[i] || ''; });
+    state.score = e.score || null;
+    state.energy = e.energy || null;
+    renderScales();
+    setMsg('');
+    renderEntry();
+  }
+
+  function shiftDay(n) {
+    var d = parse(state.date);
+    d.setDate(d.getDate() + n);
+    state.date = fmt(d);
+    loadDay();
+  }
+
+  function list(items, cls) {
+    if (!items || !items.length) return '<p class="empty">Nothing.</p>';
+    return '<ul class="b ' + cls + '">' + items.map(function (i) { return '<li>' + esc(i) + '</li>'; }).join('') + '</ul>';
+  }
+  function optSec(title, items, cls) {
+    if (!items || !items.length) return '';
+    return '<div class="sec"><h2>' + esc(title) + '</h2>' + list(items, cls) + '</div>';
+  }
+
+  function planHtml(pc) {
+    var cls = { 'done': 's-done', 'partly': 's-part', 'not done': 's-not' };
+    return '<ul class="b plan">' + pc.map(function (p) {
+      return '<li class="' + (cls[p.status] || 's-not') + '">' + esc(p.priority) + '<span class="tag">' + esc(p.status) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  function actionsHtml(actions, editable) {
+    if (!actions || !actions.length) return '<p class="empty">No follow-ups.</p>';
+    return actions.map(function (a, i) {
+      var who = a.who
+        ? '<span class="who">Answer: ' + esc(a.who) + '</span>'
+        : '<span class="who none">No person named</span>';
+      return '<div class="act' + (a.done ? ' isdone' : '') + '">' +
+        '<input type="checkbox" data-idx="' + i + '"' + (a.done ? ' checked' : '') + (editable ? '' : ' disabled') +
+        ' aria-label="Mark done: ' + esc(a.task) + '">' +
+        '<div class="t"><span class="task">' + esc(a.task) + '</span><br>' + who + '</div></div>';
+    }).join('');
+  }
+
+  function renderEntry() {
+    var out = $('#entry-out');
+    var e = state.entries[state.date];
+    $('#btn-copy').hidden = !(e && e.summary);
+    if (!e || !e.summary) { out.innerHTML = ''; return; }
+    var s = e.summary;
+    var planBlock = '';
+    if ((s.plan_check && s.plan_check.length) || (s.off_plan && s.off_plan.length)) {
+      planBlock = '<section class="sheet fresh">' +
+        (s.plan_check && s.plan_check.length ? '<div class="sec"><h2>Priorities check</h2>' + planHtml(s.plan_check) + '</div>' : '') +
+        optSec('Work outside your priorities', s.off_plan, 'plain') +
+        '</section>';
+    }
+    out.innerHTML =
+      '<section class="sheet fresh">' +
+        optSec('Wins', s.wins, 'win') +
+        '<div class="sec"><h2>Done</h2>' + list(s.done, 'done') + '</div>' +
+        '<div class="sec"><h2>Pending</h2>' + list(s.pending, 'pend') + '</div>' +
+      '</section>' +
+      '<section class="sheet fresh">' +
+        '<div class="sec"><h2>Problems</h2>' + list(s.problems, 'prob') + '</div>' +
+        optSec('Why time was lost', s.causes, 'prob') +
+      '</section>' +
+      planBlock +
+      '<section class="sheet fresh">' +
+        '<h2>Action: who to answer</h2>' + actionsHtml(s.actions, true) +
+      '</section>';
+  }
+
+  $('#entry-out').addEventListener('change', function (ev) {
+    var box = ev.target.closest('input[type="checkbox"][data-idx]');
+    if (!box) return;
+    var e = state.entries[state.date];
+    if (!e || !e.summary) return;
+    var idx = Number(box.getAttribute('data-idx'));
+    e.summary.actions[idx].done = box.checked;
+    renderEntry();
+    api('/api/entries', { method: 'POST', body: JSON.stringify({ date: state.date, entry: e }) })
+      .catch(function (err) { setMsg(err.message, true); });
+  });
+
+  function collectPlan() {
+    return ['#p1', '#p2', '#p3'].map(function (id) { return $(id).value.trim(); }).filter(Boolean);
+  }
+
+  function summaryText(date, e) {
+    var s = e.summary;
+    var L = [];
+    L.push(parse(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' }));
+    if (e.score || e.energy) L.push('Productivity: ' + (e.score || '-') + '/5, energy at end of day: ' + (e.energy || '-') + '/5');
+    function sec(title, arr) { if (arr && arr.length) { L.push('', title); arr.forEach(function (x) { L.push('- ' + x); }); } }
+    sec('Wins', s.wins);
+    sec('Done', s.done);
+    sec('Pending', s.pending);
+    sec('Problems', s.problems);
+    sec('Why time was lost', s.causes);
+    if (s.plan_check && s.plan_check.length) {
+      L.push('', 'Priorities');
+      s.plan_check.forEach(function (p) { L.push('- ' + p.priority + ': ' + p.status); });
+    }
+    sec('Work outside priorities', s.off_plan);
+    if (s.actions && s.actions.length) {
+      L.push('', 'Actions');
+      s.actions.forEach(function (a) { L.push('- ' + a.task + (a.who ? ' (answer: ' + a.who + ')' : '')); });
+    }
+    return L.join('\n');
+  }
+
+  function copyText(text, msgEl) {
+    var done = function () { msgEl.textContent = 'Copied.'; msgEl.className = 'msg'; };
+    var fail = function () { msgEl.textContent = 'Copy failed. Select and copy manually.'; msgEl.className = 'msg err'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fail);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { fail(); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  $('#btn-copy').addEventListener('click', function () {
+    var e = state.entries[state.date];
+    if (e && e.summary) copyText(summaryText(state.date, e), $('#msg'));
+  });
+
+  function saveEntry(date, entry) {
+    return api('/api/entries', { method: 'POST', body: JSON.stringify({ date: date, entry: entry }) })
+      .then(function () { state.entries[date] = entry; });
+  }
+
+  $('#btn-save').addEventListener('click', function () {
+    var raw = $('#raw').value;
+    var plan = collectPlan();
+    if (!raw.trim() && !plan.length && !state.score && !state.energy) { setMsg('Nothing to save yet.', true); return; }
+    var date = state.date;
+    var prev = state.entries[date] || {};
+    var entry = { raw: raw, plan: plan, score: state.score, energy: state.energy, summary: prev.summary || null };
+    setMsg('Saving...');
+    saveEntry(date, entry).then(function () {
+      if (state.date === date) renderEntry();
+      setMsg('Saved.');
+    }).catch(function (e) { setMsg(e.message, true); });
+  });
+
+  $('#btn-sum').addEventListener('click', function () {
+    var raw = $('#raw').value.trim();
+    if (!raw) { setMsg('Write your notes first.', true); return; }
+    var btn = $('#btn-sum');
+    btn.disabled = true;
+    setMsg('Summarizing...');
+    var date = state.date;
+    var plan = collectPlan();
+    var score = state.score, energy = state.energy;
+    api('/api/summarize', { method: 'POST', body: JSON.stringify({ date: date, raw: raw, plan: plan }) })
+      .then(function (j) {
+        var summary = j.summary;
+        var old = (state.entries[date] && state.entries[date].summary && state.entries[date].summary.actions) || [];
+        summary.actions = (summary.actions || []).map(function (a) {
+          var prev = old.filter(function (o) { return o.task === a.task; })[0];
+          return { task: a.task, who: a.who, done: !!(prev && prev.done) };
+        });
+        return saveEntry(date, { raw: raw, plan: plan, score: score, energy: energy, summary: summary });
+      })
+      .then(function () {
+        if (state.date === date) renderEntry();
+        setMsg('Saved.');
+      })
+      .catch(function (e) { setMsg(e.message, true); })
+      .then(function () { btn.disabled = false; });
+  });
+
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-act]');
+    if (!b) return;
+    var a = b.getAttribute('data-act');
+    if (a === 'prev') shiftDay(-1);
+    if (a === 'next') shiftDay(1);
+  });
+  $('#date').addEventListener('change', function (e) {
+    if (e.target.value) { state.date = e.target.value; loadDay(); }
+  });
+
+  /* ---------- History ---------- */
+  function entryText(e) {
+    var s = e.summary || {};
+    return [e.raw, (e.plan || []).join(' '), (s.wins || []).join(' '), (s.done || []).join(' '), (s.pending || []).join(' '),
+      (s.problems || []).join(' '), (s.causes || []).join(' '),
+      (s.actions || []).map(function (a) { return a.task + ' ' + a.who; }).join(' ')].join(' ').toLowerCase();
+  }
+
+  function renderHistory() {
+    var q = $('#search').value.trim().toLowerCase();
+    var dates = Object.keys(state.entries).sort().reverse().filter(function (d) {
+      return !q || entryText(state.entries[d]).indexOf(q) !== -1;
+    });
+    var box = $('#hist-list');
+    if (!dates.length) {
+      box.innerHTML = '<p class="empty">' + (q ? 'No entries match your search.' : 'No entries yet. Write your first day on the Today tab.') + '</p>';
+      return;
+    }
+    box.innerHTML = dates.map(function (d) {
+      var e = state.entries[d], s = e.summary || {};
+      var open = (s.actions || []).filter(function (a) { return !a.done; }).length;
+      var meta = (e.score ? 'Productivity ' + e.score + '/5, ' : '') + (e.energy ? 'energy ' + e.energy + '/5, ' : '') +
+        (s.done || []).length + ' done, ' + (s.pending || []).length + ' pending, ' + open + ' open actions';
+      var prev = (s.wins && s.wins.length ? s.wins : (s.done || [])).slice(0, 2).join(', ');
+      return '<button class="hitem" data-open="' + d + '">' +
+        '<div class="hdate">' + esc(parse(d).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })) + '</div>' +
+        '<div class="hmeta">' + esc(meta) + '</div>' +
+        (prev ? '<div class="hprev">' + esc(prev) + '</div>' : '') +
+        '</button>';
+    }).join('');
+  }
+  $('#search').addEventListener('input', renderHistory);
+  $('#hist-list').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-open]');
+    if (!b) return;
+    state.date = b.getAttribute('data-open');
+    setTab('log');
+    loadDay();
+    window.scrollTo(0, 0);
+  });
+
+  /* ---------- Report ---------- */
+  function weekRange(offset) {
+    var d = new Date(); d.setHours(12, 0, 0, 0);
+    var day = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - day + offset * 7);
+    var from = fmt(d);
+    d.setDate(d.getDate() + 6);
+    return [from, fmt(d)];
+  }
+  function monthRange(offset) {
+    var d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(1);
+    d.setMonth(d.getMonth() + offset);
+    var from = fmt(d);
+    var e = new Date(d.getFullYear(), d.getMonth() + 1, 0, 12);
+    return [from, fmt(e)];
+  }
+  function currentRange() {
+    var r = state.range;
+    if (r === 'w0') return { r: weekRange(0), label: 'this week' };
+    if (r === 'w1') return { r: weekRange(-1), label: 'last week' };
+    if (r === 'm0') return { r: monthRange(0), label: 'this month' };
+    if (r === 'm1') return { r: monthRange(-1), label: 'last month' };
+    return { r: [$('#from').value, $('#to').value], label: 'the selected period' };
+  }
+
+  $('#ranges').addEventListener('click', function (ev) {
+    var c = ev.target.closest('[data-range]');
+    if (!c) return;
+    state.range = c.getAttribute('data-range');
+    document.querySelectorAll('.chip').forEach(function (x) {
+      x.setAttribute('aria-pressed', x === c ? 'true' : 'false');
+    });
+    $('#custom').hidden = state.range !== 'c';
+  });
+
+  function repSec(title, items, cls) {
+    if (!items || !items.length) return '';
+    return '<div class="sec"><h2>' + esc(title) + '</h2>' + list(items, cls || 'plain') + '</div>';
+  }
+
+  function shapeHtml(st) {
+    if (!st || !st.ratedDays) {
+      return '<section class="sheet fresh"><h2>Your week shape</h2><p class="empty">No ratings yet. Rate productivity and energy on the Today tab to see your best days.</p></section>';
+    }
+    var rows = st.byWeekday.map(function (w) {
+      var p = w.avgScore, e = w.avgEnergy;
+      var txt = w.days ? (p != null ? p.toFixed(1) : '-') + ' / ' + (e != null ? e.toFixed(1) : '-') : 'no data';
+      return '<div class="wk"><span class="d">' + esc(w.day) + '</span><div class="bars">' +
+        '<span class="track"><i class="fill p" style="width:' + (p ? p * 20 : 0) + '%"></i></span>' +
+        '<span class="track"><i class="fill e" style="width:' + (e ? e * 20 : 0) + '%"></i></span>' +
+        '</div><span class="v">' + esc(txt) + '</span></div>';
+    }).join('');
+    var facts = [];
+    if (st.best && st.worst) {
+      facts.push('Most productive: ' + (FULLDAY[st.best.day] || st.best.day) + ' (' + st.best.avgScore.toFixed(1) + '). Lowest: ' + (FULLDAY[st.worst.day] || st.worst.day) + ' (' + st.worst.avgScore.toFixed(1) + ').');
+    }
+    if (st.priorities && st.priorities.total) {
+      var p = st.priorities;
+      facts.push('Priorities: ' + p.done + ' done, ' + p.partly + ' partly, ' + p.not + ' not done, out of ' + p.total + '.');
+    }
+    return '<section class="sheet fresh"><h2>Your week shape</h2>' +
+      '<p class="legend"><span><i style="background:var(--accent)"></i>Productivity (top bar)</span><span><i style="background:var(--pending)"></i>Energy (bottom bar)</span><span>Averages out of 5</span></p>' +
+      rows +
+      (facts.length ? '<p class="facts">' + facts.map(esc).join('<br>') + '</p>' : '') +
+      '</section>';
+  }
+
+  function renderReport(rp, range) {
+    var fu = '';
+    if (rp.follow_ups && rp.follow_ups.length) {
+      fu = '<div class="sec"><h2>Action: who to answer</h2>' + rp.follow_ups.map(function (a) {
+        var who = a.who ? '<span class="who">Answer: ' + esc(a.who) + '</span>' : '<span class="who none">No person named</span>';
+        return '<div class="act"><div class="t"><span class="task">' + esc(a.task) + '</span><br>' + who + '</div></div>';
+      }).join('') + '</div>';
+    }
+    $('#report-out').innerHTML =
+      shapeHtml(rp.stats) +
+      '<section class="sheet fresh">' +
+        '<p class="msg" style="margin:0 0 12px">' + esc(range[0]) + ' to ' + esc(range[1]) + ', ' + rp.days + ' day' + (rp.days === 1 ? '' : 's') + ' logged</p>' +
+        repSec('Overview', rp.overview) +
+        repSec('Wins', rp.wins, 'win') +
+        repSec('What your best days had in common', rp.best_day, 'done') +
+      '</section>' +
+      '<section class="sheet fresh">' +
+        repSec('What happened on low days', rp.low_days, 'prob') +
+        repSec('Top causes of lost time', rp.top_causes, 'prob') +
+        repSec('Priority check', rp.priority_check) +
+        repSec('Energy through the period', rp.energy) +
+      '</section>' +
+      '<section class="sheet fresh">' +
+        repSec('Try next', rp.suggestions) +
+        repSec('Suggested top priorities for next period', rp.next_week_focus, 'pend') +
+        fu +
+      '</section>';
+  }
+
+  function reportText(rp, label, range) {
+    var L = ['Work report: ' + label + ' (' + range[0] + ' to ' + range[1] + ')'];
+    function sec(t, a) { if (a && a.length) { L.push('', t); a.forEach(function (x) { L.push('- ' + x); }); } }
+    sec('Overview', rp.overview);
+    sec('Wins', rp.wins);
+    sec('What your best days had in common', rp.best_day);
+    sec('What happened on low days', rp.low_days);
+    sec('Top causes of lost time', rp.top_causes);
+    sec('Priority check', rp.priority_check);
+    sec('Energy through the period', rp.energy);
+    sec('Try next', rp.suggestions);
+    sec('Suggested top priorities for next period', rp.next_week_focus);
+    if (rp.follow_ups && rp.follow_ups.length) {
+      L.push('', 'Action: who to answer');
+      rp.follow_ups.forEach(function (a) { L.push('- ' + a.task + (a.who ? ' (answer: ' + a.who + ')' : '')); });
+    }
+    return L.join('\n');
+  }
+
+  $('#btn-report').addEventListener('click', function () {
+    var cr = currentRange();
+    var rm = $('#report-msg');
+    if (!cr.r[0] || !cr.r[1] || cr.r[0] > cr.r[1]) { rm.textContent = 'Pick a valid date range.'; rm.className = 'msg err'; return; }
+    var btn = $('#btn-report');
+    btn.disabled = true;
+    rm.textContent = 'Analyzing...'; rm.className = 'msg';
+    $('#btn-report-copy').hidden = true;
+    api('/api/report', { method: 'POST', body: JSON.stringify({ from: cr.r[0], to: cr.r[1], label: cr.label }) })
+      .then(function (j) {
+        state.lastReport = { rp: j.report, label: cr.label, range: cr.r };
+        renderReport(j.report, cr.r);
+        rm.textContent = '';
+        $('#btn-report-copy').hidden = false;
+      })
+      .catch(function (e) { rm.textContent = e.message; rm.className = 'msg err'; $('#report-out').innerHTML = ''; })
+      .then(function () { btn.disabled = false; });
+  });
+  $('#btn-report-copy').addEventListener('click', function () {
+    var l = state.lastReport;
+    if (l) copyText(reportText(l.rp, l.label, l.range), $('#report-msg'));
+  });
+
+  /* ---------- Init ---------- */
+  $('#from').value = weekRange(0)[0];
+  $('#to').value = weekRange(0)[1];
+  renderDate();
+  boot();
+})();
+</script>
+</body>
+</html>
