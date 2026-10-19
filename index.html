@@ -413,10 +413,13 @@
       var v = Number(b.getAttribute('data-val'));
       state[k] = state[k] === v ? null : v;
       renderScales();
+      scheduleAutoSummary();
     });
   });
 
   function loadDay() {
+    window.clearTimeout(autoSummaryTimer);
+    autoSummaryVersion++;
     renderDate();
     var e = state.entries[state.date] || {};
     $('#raw').value = e.raw || '';
@@ -556,6 +559,46 @@
       .then(function () { state.entries[date] = entry; });
   }
 
+  // Automatically save first, then run the deterministic summary after the user pauses.
+  var autoSummaryTimer = null;
+  var autoSummaryVersion = 0;
+  function scheduleAutoSummary() {
+    window.clearTimeout(autoSummaryTimer);
+    var version = ++autoSummaryVersion;
+    var date = state.date;
+    autoSummaryTimer = window.setTimeout(function () {
+      if (version !== autoSummaryVersion || date !== state.date) return;
+      var raw = $('#raw').value;
+      var plan = collectPlan();
+      var score = state.score, energy = state.energy;
+      if (!raw.trim()) {
+        var emptyEntry = { raw: raw, plan: plan, score: score, energy: energy, summary: (state.entries[date] || {}).summary || null };
+        saveEntry(date, emptyEntry).then(function () { setMsg('Draft saved. Add notes to generate a summary.'); })
+          .catch(function (err) { setMsg(err.message, true); });
+        return;
+      }
+      var entry = { raw: raw, plan: plan, score: score, energy: energy, summary: (state.entries[date] || {}).summary || null };
+      setMsg('Saving notes...');
+      saveEntry(date, entry).then(function () {
+        if (version !== autoSummaryVersion) return;
+        setMsg('Saved. Creating rule-based summary...');
+        return api('/api/summarize', { method: 'POST', body: JSON.stringify({ date: date, raw: raw, plan: plan }) });
+      }).then(function (result) {
+        if (!result || version !== autoSummaryVersion) return;
+        var saved = state.entries[date] || entry;
+        saved.summary = result.summary;
+        saved.raw = raw; saved.plan = plan; saved.score = score; saved.energy = energy;
+        state.entries[date] = saved;
+        if (state.date === date) { renderEntry(); renderHistory(); setMsg('Saved and summarized automatically.'); }
+      }).catch(function (err) {
+        if (version === autoSummaryVersion && state.date === date) setMsg('Notes saved, but summary failed: ' + err.message, true);
+      });
+    }, 1600);
+  }
+
+  $('#raw').addEventListener('input', scheduleAutoSummary);
+  ['#p1', '#p2', '#p3'].forEach(function (id) { $(id).addEventListener('input', scheduleAutoSummary); });
+
   $('#btn-save').addEventListener('click', function () {
     var raw = $('#raw').value;
     var plan = collectPlan();
@@ -575,7 +618,7 @@
     if (!raw) { setMsg('Write your notes first.', true); return; }
     var btn = $('#btn-sum');
     btn.disabled = true;
-    setMsg('Summarizing...');
+    setMsg('Creating rule-based summary...');
     var date = state.date;
     var plan = collectPlan();
     var score = state.score, energy = state.energy;
