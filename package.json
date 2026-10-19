@@ -1,0 +1,10 @@
+{
+  "name": "worklog",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Single-user rule-based daily work log with Upstash Redis storage",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test"
+  }
+}
