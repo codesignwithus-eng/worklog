@@ -8,27 +8,6 @@ Jot down your day’s raw notes, and watch the app transform them into clear, co
 Get your Anthropic API key:
 Head to console.anthropic.com to grab your API key. Keep it handy!
 
-Upload to GitHub:
-Spin up a new repo and push all the files—including the crucial api folder.
-
-Import to Vercel:
-On the Vercel dashboard, create a new project by selecting your repo. Pick the Other framework preset and hit Deploy (leave other settings as is).
-
-Hook up your database:
-In Vercel, add Upstash Redis from the Storage tab or Marketplace. The free plan does the trick. Connect it—Vercel handles the rest with environment variables.
-
-Set your environment variables:
-In Project Settings > Environment Variables, add:
-
-ANTHROPIC_API_KEY = (your API key)
-APP_PASSWORD = (your secret password for access)
-Optional: ANTHROPIC_MODEL = (custom Claude model, defaults to claude-sonnet-5)
-Redeploy:
-Redeploy from the latest Deployment tab to activate your settings.
-
-Start logging!
-Open your Vercel URL, enter the password, and you’re ready. Pro tip: add it to your phone’s home screen for instant access.
-
 🎯 How to Use — Simple Daily Rituals
 Morning (Just 1 Minute)
 Open the Today tab.
